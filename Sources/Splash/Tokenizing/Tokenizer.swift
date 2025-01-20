@@ -58,14 +58,31 @@ private extension Tokenizer {
             self.grammar = grammar
             segments = (nil, nil)
         }
-
+        
         mutating func next() -> Segment? {
+            while true {
+                switch self._next() {
+                case .next:
+                    continue
+                case .segment(let segment):
+                    return segment
+                }
+            }
+        }
+
+        private enum NextResult {
+            case segment(Segment?)
+            case next
+        }
+        
+        private mutating func _next() -> NextResult {
+                        
             let nextIndex = makeNextIndex()
 
             guard nextIndex != code.endIndex else {
                 let segment = segments.current
                 segments.current = nil
-                return segment
+                return .segment(segment)
             }
 
             index = nextIndex
@@ -75,12 +92,14 @@ private extension Tokenizer {
             case .token, .delimiter:
                 guard var segment = segments.current else {
                     segments.current = makeSegment(with: component, at: nextIndex)
-                    return next()
+                    return .next
                 }
 
                 guard segment.trailingWhitespace == nil,
                       component.isDelimiter == segment.currentTokenIsDelimiter else {
-                    return finish(segment, with: component, at: nextIndex)
+                    return .segment(
+                        finish(segment, with: component, at: nextIndex)
+                    )
                 }
 
                 if component.isDelimiter {
@@ -89,20 +108,22 @@ private extension Tokenizer {
                                                           mergableWith: component.character)
 
                     guard shouldMerge else {
-                        return finish(segment, with: component, at: nextIndex)
+                        return .segment(
+                            finish(segment, with: component, at: nextIndex)
+                        )
                     }
                 }
 
                 segment.tokens.current.append(component.character)
                 segments.current = segment
-                return next()
+                return .next
             case .whitespace, .newline:
                 guard var segment = segments.current else {
                     var segment = makeSegment(with: component, at: nextIndex)
                     segment.trailingWhitespace = component.token
                     segment.isLastOnLine = component.isNewline
                     segments.current = segment
-                    return next()
+                    return .next
                 }
 
                 if var existingWhitespace = segment.trailingWhitespace {
@@ -117,7 +138,7 @@ private extension Tokenizer {
                 }
 
                 segments.current = segment
-                return next()
+                return .next
             }
         }
 

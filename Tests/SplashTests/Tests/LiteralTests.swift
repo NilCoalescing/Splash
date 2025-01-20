@@ -382,4 +382,27 @@ final class LiteralTests: SyntaxHighlighterTestCase {
             .plainText(")")
         ])
     }
+    
+    /**
+     
+     This test was adding since we ended up having a recursive loop that would crash.
+     
+     Switching to async mode reduces your accessible stack size.
+     */
+    func testNestedMultiline() async {
+        let testString = #"""
+        struct ContentView: View {
+            @State private var text = """
+            ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~
+            """
+            
+            var body: some View {
+                TextEditor(text: $text)
+                    .font(.body)
+                    .frame(width: 300, height: 300)
+            }
+        }
+        """#
+        let _ = highlighter.highlight(testString)
+    }
 }
