@@ -7,7 +7,7 @@
 import Foundation
 
 #if !os(Linux)
-
+import AppKit
 /// A theme describes what fonts and colors to use when rendering
 /// certain output formats - such as `NSAttributedString`. Several
 /// default implementations are provided - see Theme+Defaults.swift.
